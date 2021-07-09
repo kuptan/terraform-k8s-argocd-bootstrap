@@ -1,4 +1,6 @@
 # Terraform K8s ArgoCD Bootstrap
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![GitHub Release](https://img.shields.io/github/release/kube-champ/terraform-k8s-argocd-bootstrap.svg?style=flat)]() [![PR's Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
+
 A terraform module that will bootstrap a Kubernetes cluster with ArgoCD and Sealed Secrets.
 
 ## Usage
@@ -124,7 +126,7 @@ Check the [examples folder](https://github.com/kube-champ/terraform-k8s-argocd-b
 **Note**: Once your cluster is successfully bootstrapped, you'll need to get the git SSH public key and add it as a deploy key in your git repo. The public key is exposed as an output from the module under the name `argocd_git_public_key`.
 
 ### Overrides Charts Values
-
+```terraform
 module "argocd-bootstrap" {
   source = "kube-champ/argocd-bootstrap/k8s"
   ...
@@ -141,8 +143,10 @@ module "argocd-bootstrap" {
     "securityContext.runAsUser" = "1601"
   }  
 }
+```
 
 ### BYOK (Bring Your Own Keys)
+```terraform
 module "argocd-bootstrap" {
   source = "kube-champ/argocd-bootstrap/k8s"
   ...
@@ -158,7 +162,7 @@ module "argocd-bootstrap" {
     private_cert           = "YOUR_PRIVATE_CERT"
   }
 }
-
+```
 ## Module Info
 See the module info here [here](./TERRAFORM.md) or view it on the [Terraform Registry](https://registry.terraform.io/modules/kube-champ/argocd-bootstrap/k8s/latest)
 
