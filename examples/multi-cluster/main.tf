@@ -1,29 +1,3 @@
-# Terraform K8s ArgoCD Bootstrap
-A terraform module that will bootstrap a Kubernetes cluster with ArgoCD and Sealed Secrets.
-
-## Usage
-
-```terraform
-variable "target_cluster_name" {
-  description = "The cluster name where the ArgoCD will be installed"
-  type        = string
-
-  default = "operation-cluster"
-}
-
-variable "remote_clusters" {
-  description = "Remote cluster to be managed by ArgoCD"
-  type        = list(object({ name : string, namespaces : list(string) }))
-
-  default = [{
-    name       = "cluster-a"
-    namespaces = ["default", "cert-manager", "monitoring"]
-  }]
-}
-
-######### 
-### AWS EKS target cluster credentials
-#########
 data "aws_eks_cluster" "target" {
   name = var.target_cluster_name
 }
@@ -32,9 +6,6 @@ data "aws_eks_cluster_auth" "target" {
   name = var.target_cluster_name
 }
 
-######### 
-### AWS EKS remote cluster credentials
-#########
 data "aws_eks_cluster" "remote" {
   for_each = { for c in var.remote_clusters : c.name => c }
   name     = each.key
@@ -60,7 +31,8 @@ provider "kubernetes" {
 }
 
 module "argocd-bootstrap" {
-  source = "kube-champ/argocd-bootstrap/k8s"
+  # source = "kube-champ/argocd-bootstrap/k8s"
+  source = "../../"
 
   remote_clusters = [
     for c in var.remote_clusters : {
@@ -117,50 +89,3 @@ module "argocd-bootstrap" {
     }]
   }]
 }
-```
-
-Check the [examples folder](https://github.com/kube-champ/terraform-k8s-argocd-bootstrap/tree/master/examples) for more examples 
-
-**Note**: Once your cluster is successfully bootstrapped, you'll need to get the git SSH public key and add it as a deploy key in your git repo. The public key is exposed as an output from the module under the name `argocd_git_public_key`.
-
-### Overrides Charts Values
-
-module "argocd-bootstrap" {
-  source = "kube-champ/argocd-bootstrap/k8s"
-  ...
-
-  argocd_chart_value_files = [file("path/to/values/file.yaml")]
-  sealed_secrets_chart_value_files = [file("path/to/values/file.yaml")]
-
-  argocd_chart_values_overrides = {
-    "controller.name" = "custom-controller-name"
-  }
-
-  sealed_secrets_chart_values_overrides = {
-    "rbac.create" = "true"
-    "securityContext.runAsUser" = "1601"
-  }  
-}
-
-### BYOK (Bring Your Own Keys)
-module "argocd-bootstrap" {
-  source = "kube-champ/argocd-bootstrap/k8s"
-  ...
-
-  argocd_git_ssh_key = {
-    auto_generate_keys = false
-    private_key = "YOUR_PRIVATE_KEY"
-  }
-
-  sealed_secrets_key_cert = {
-    auto_generate_key_cert = false
-    private_key            = "YOUR_PRIVATE_KEY"
-    private_cert           = "YOUR_PRIVATE_CERT"
-  }
-}
-
-## Module Info
-See the module info here [here](./TERRAFORM.md) or view it on the [Terraform Registry](https://registry.terraform.io/modules/kube-champ/argocd-bootstrap/k8s/latest)
-
-## Contributing
-See contributing docs [here](./docs/CONTRIBUTING.md)

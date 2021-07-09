@@ -2,15 +2,15 @@ locals {
   cluster_credentials = {
     configs = {
       clusterCredentials = [
-        for c in var.managed_clusters_names : {
-          name       = c
-          server     = data.aws_eks_cluster.creds[c].endpoint
-          namespaces = "default,argo-system"
+        for c in var.remote_clusters : {
+          name       = c.name
+          server     = c.host
+          namespaces = join(",", c.namespaces)
           config = {
-            bearerToken = data.aws_eks_cluster_auth.creds[c].token
+            bearerToken = c.token
             tlsClientConfig = {
               insecure = false
-              caData   = data.aws_eks_cluster.creds[c].certificate_authority.0.data
+              caData   = c.caData
             }
           }
         }
@@ -29,15 +29,15 @@ locals {
 }
 
 data "aws_eks_cluster" "creds" {
-  for_each = toset(var.managed_clusters_names)
+  for_each = { for c in var.remote_clusters : c.name => c }
 
-  name = each.value
+  name = each.key
 }
 
 data "aws_eks_cluster_auth" "creds" {
-  for_each = toset(var.managed_clusters_names)
+  for_each = { for c in var.remote_clusters : c.name => c }
 
-  name = each.value
+  name = each.key
 }
 
 data "template_file" "git" {
@@ -50,6 +50,8 @@ data "template_file" "git" {
 }
 
 resource "tls_private_key" "git" {
+  count = var.argocd_git_ssh_key.auto_generate_keys ? 1 : 0
+
   algorithm = "RSA"
   rsa_bits  = "4096"
 }
@@ -62,7 +64,7 @@ resource "kubernetes_secret" "git" {
   }
 
   data = {
-    "${local.gitSSHSecretKey}" = tls_private_key.git.private_key_pem
+    "${local.gitSSHSecretKey}" = var.argocd_git_ssh_key.auto_generate_keys ? tls_private_key.git.0.private_key_pem : var.argocd_git_ssh_key.private_key
   }
 
   type = "Opaque"
@@ -76,14 +78,23 @@ resource "helm_release" "argo" {
   chart      = "argo-cd"
   version    = var.argocd_chart_version
 
-  values = [
+  values = concat([
     yamlencode(local.cluster_credentials),
     yamlencode(local.argocd_config),
     data.template_file.git.rendered
-  ]
+  ], var.argocd_chart_value_files)
 
   set {
     name  = "global.image.tag"
     value = var.argocd_image_tag
+  }
+
+  dynamic "set" {
+    for_each = var.argocd_chart_values_overrides
+
+    content {
+      name  = set.key
+      value = set.value
+    }
   }
 }

@@ -54,7 +54,7 @@ resource "helm_release" "sealed_secrets" {
   chart      = "sealed-secrets"
   version    = var.sealed_secrets_chart.chart_version
 
-  values = var.sealed_secrets_chart_values
+  values = var.sealed_secrets_chart_value_files
 
   set {
     name  = "image.repository"
