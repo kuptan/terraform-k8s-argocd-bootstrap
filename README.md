@@ -1,69 +1,168 @@
 # Terraform K8s ArgoCD Bootstrap
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![GitHub Release](https://img.shields.io/github/release/kube-champ/terraform-k8s-argocd-bootstrap.svg?style=flat)]() [![PR's Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
+
 A terraform module that will bootstrap a Kubernetes cluster with ArgoCD and Sealed Secrets.
 
-## Limitations
-1. The module only support AWS EKS clusters
-
 ## Usage
-Below are few examples on how to use this module
 
 ```terraform
-module "argocd-bootstrap" {
-  source  = "kube-champ/argocd-bootstrap/k8s"
+variable "target_cluster_name" {
+  description = "The cluster name where the ArgoCD will be installed"
+  type        = string
 
-  target_cluster_name = "cluster-ops"
-  managed_clusters_names = ["cluster-a", "cluster-b]
+  default = "operation-cluster"
+}
+
+variable "remote_clusters" {
+  description = "Remote cluster to be managed by ArgoCD"
+  type        = list(object({ name : string, namespaces : list(string) }))
+
+  default = [{
+    name       = "cluster-a"
+    namespaces = ["default", "cert-manager", "monitoring"]
+  }]
+}
+
+######### 
+### AWS EKS target cluster credentials
+#########
+data "aws_eks_cluster" "target" {
+  name = var.target_cluster_name
+}
+
+data "aws_eks_cluster_auth" "target" {
+  name = var.target_cluster_name
+}
+
+######### 
+### AWS EKS remote cluster credentials
+#########
+data "aws_eks_cluster" "remote" {
+  for_each = { for c in var.remote_clusters : c.name => c }
+  name     = each.key
+}
+
+data "aws_eks_cluster_auth" "remote" {
+  for_each = { for c in var.remote_clusters : c.name => c }
+  name     = each.key
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = data.aws_eks_cluster.target.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.target.certificate_authority.0.data)
+    token                  = data.aws_eks_cluster_auth.target.token
+  }
+}
+
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.target.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.target.certificate_authority.0.data)
+  token                  = data.aws_eks_cluster_auth.target.token
+}
+
+module "argocd-bootstrap" {
+  source = "kube-champ/argocd-bootstrap/k8s"
+
+  remote_clusters = [
+    for c in var.remote_clusters : {
+      name       = c.name
+      namespaces = c.namespaces
+      host : data.aws_eks_cluster.remote[c.name].endpoint
+      caData : data.aws_eks_cluster.remote[c.name].certificate_authority.0.data
+      token : data.aws_eks_cluster_auth.remote[c.name].token
+    }
+  ]
+
   argocd_git_repo_url = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
-  
+
   argocd_additional_applications = [{
-    name = "root"
+    name      = "root"
     namespace = "argo-system"
-    project = "vendor-pipeline"
+    project   = "vendor-pipeline"
     source = {
-      repoURL = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
+      repoURL        = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
       targetRevision = "master"
-      path = "root"
+      path           = "root"
       directory = {
         recurse = false
       }
     }
     destination = {
-      server = "https://kubernetes.default.svc"
+      server    = "https://kubernetes.default.svc"
       namespace = "default"
     }
     syncPolicy = {
       automated = {
-        prune = false
+        prune    = false
         selfHeal = false
       }
     }
   }]
-  
+
   argocd_additional_projects = [{
-    name = "vendor-pipeline"
+    name        = "vendor-pipeline"
     description = "project to handle all vendor pipeline infrastructure"
-    namespace = "argo-system"
+    namespace   = "argo-system"
     sourceRepos = ["*"]
     destinations = [{
       namespace = "*"
-      server = "*"
+      server    = "*"
     }]
     clusterResourceWhitelist = [{
       group = "*"
-      kind = "*"
+      kind  = "*"
     }]
     namespaceResourceWhitelist = [{
       group = "*"
-      kind = "*"
+      kind  = "*"
     }]
   }]
 }
-
 ```
 
-Once your cluster is successfully bootstrapped, you'll need to get the git SSH public key and add it as a deploy key in your git repo. The public key is outputed from the module under  `argocd_git_public_key`.
+Check the [examples folder](https://github.com/kube-champ/terraform-k8s-argocd-bootstrap/tree/master/examples) for more examples 
 
+**Note**: Once your cluster is successfully bootstrapped, you'll need to get the git SSH public key and add it as a deploy key in your git repo. The public key is exposed as an output from the module under the name `argocd_git_public_key`.
 
+### Overrides Charts Values
+```terraform
+module "argocd-bootstrap" {
+  source = "kube-champ/argocd-bootstrap/k8s"
+  ...
+
+  argocd_chart_value_files = [file("path/to/values/file.yaml")]
+  sealed_secrets_chart_value_files = [file("path/to/values/file.yaml")]
+
+  argocd_chart_values_overrides = {
+    "controller.name" = "custom-controller-name"
+  }
+
+  sealed_secrets_chart_values_overrides = {
+    "rbac.create" = "true"
+    "securityContext.runAsUser" = "1601"
+  }  
+}
+```
+
+### BYOK (Bring Your Own Keys)
+```terraform
+module "argocd-bootstrap" {
+  source = "kube-champ/argocd-bootstrap/k8s"
+  ...
+
+  argocd_git_ssh_key = {
+    auto_generate_keys = false
+    private_key = "YOUR_PRIVATE_KEY"
+  }
+
+  sealed_secrets_key_cert = {
+    auto_generate_key_cert = false
+    private_key            = "YOUR_PRIVATE_KEY"
+    private_cert           = "YOUR_PRIVATE_CERT"
+  }
+}
+```
 ## Module Info
 See the module info here [here](./TERRAFORM.md) or view it on the [Terraform Registry](https://registry.terraform.io/modules/kube-champ/argocd-bootstrap/k8s/latest)
 

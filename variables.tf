@@ -1,16 +1,17 @@
-variable "target_cluster_name" {
-  description = "The cluster name where the ArgoCD will be installed"
-  type        = string
-}
-
 variable "argocd_git_repo_url" {
   description = "The ArgoCD git config"
   type        = string
 }
 
-variable "managed_clusters_names" {
-  description = "A list of clusters that will be managed by ArgoCD"
-  type        = list(string)
+variable "remote_clusters" {
+  description = "A list of remote clusters that will be managed by ArgoCD"
+  type = list(object({
+    name : string
+    namespaces : list(string)
+    host : string
+    caData : string
+    token : string
+  }))
 
   default = []
 }
@@ -57,6 +58,33 @@ variable "argocd_additional_projects" {
   default = []
 }
 
+variable "argocd_chart_value_files" {
+  description = "A list of values.yaml files to be added to the argo installation."
+  type        = list(string)
+
+  default = []
+}
+
+variable "argocd_chart_values_overrides" {
+  description = "A map of key/value to override the argocdc chart values. The key must be the path/name of the chart value, e.g: `path.to.chart.key`"
+  type        = map(string)
+
+  default = {}
+}
+
+variable "argocd_git_ssh_key" {
+  description = "The keys config for argocd git repo"
+  type = object({
+    auto_generate_keys : bool,
+    private_key : string
+  })
+
+  default = {
+    auto_generate_keys = true
+    private_key        = ""
+  }
+}
+
 variable "sealed_secrets_key_cert" {
   description = "The key/cert config for sealed secrets. If `auto_generate_key_cert` is false and no custom key/cert is provided, no custom key/cert will be generated"
   type = object({
@@ -87,7 +115,7 @@ variable "sealed_secrets_chart" {
   }
 }
 
-variable "sealed_secrets_chart_values" {
+variable "sealed_secrets_chart_value_files" {
   description = "A list of values.yaml files to be added to the chart installation."
   type        = list(string)
 
