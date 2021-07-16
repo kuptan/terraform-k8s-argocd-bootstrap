@@ -55,6 +55,7 @@ No Modules.
 
 | Name | Description |
 |------|-------------|
+| argocd\_generated\_admin\_password | Auto-generated password for `admin` user |
 | argocd\_git\_private\_key | n/a |
 | argocd\_git\_public\_key | n/a |
 | sealed\_secrets\_generated\_cert | n/a |

@@ -10,3 +10,9 @@ resource "kubernetes_namespace" "argo" {
     ]
   }
 }
+
+resource "random_password" "argo_admin_password" {
+  length           = 10
+  special          = true
+  override_special = "_%@"
+}

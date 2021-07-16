@@ -88,7 +88,16 @@ resource "helm_release" "argo" {
     name  = "global.image.tag"
     value = var.argocd_image_tag
   }
-
+  set {
+    name  = "configs.secret.argocdServerAdminPassword"
+    value = bcrypt(random_password.argo_admin_password.0.result)
+    type  = "string"
+  }
+  set {
+    name  = "configs.secret.argocdServerAdminPasswordMtime"
+    value = "2020-01-01T10:11:12Z" //date "2020-01-01T10:11:12Z" , https://github.com/argoproj/argo-helm/issues/347#issuecomment-698871506
+    type  = "string"
+  }
   dynamic "set" {
     for_each = var.argocd_chart_values_overrides
 
