@@ -1,12 +1,12 @@
 resource "tls_private_key" "sealed_secret_key" {
-  count = var.sealed_secrets_key_cert.auto_generate_key_cert ? 1 : 0
+  count = var.sealed_secrets_auto_generate_key_cert ? 1 : 0
 
   algorithm = "RSA"
   rsa_bits  = "4096"
 }
 
 resource "tls_self_signed_cert" "sealed_secret_cert" {
-  count = var.sealed_secrets_key_cert.auto_generate_key_cert ? 1 : 0
+  count = var.sealed_secrets_auto_generate_key_cert ? 1 : 0
 
   key_algorithm   = "RSA"
   private_key_pem = tls_private_key.sealed_secret_key.0.private_key_pem
@@ -28,7 +28,7 @@ resource "tls_self_signed_cert" "sealed_secret_cert" {
 
 resource "kubernetes_secret" "sealed_secrets_key" {
   depends_on = [kubernetes_namespace.argo]
-  count      = var.sealed_secrets_key_cert.auto_generate_key_cert || (var.sealed_secrets_key_cert.private_key != "" && var.sealed_secrets_key_cert.private_cert != "") ? 1 : 0
+  count      = var.sealed_secrets_auto_generate_key_cert || (var.sealed_secrets_key_cert.private_key != "" && var.sealed_secrets_key_cert.private_cert != "") ? 1 : 0
 
   metadata {
     name      = "sealed-secret-encryption-key"
@@ -39,8 +39,8 @@ resource "kubernetes_secret" "sealed_secrets_key" {
   }
 
   data = {
-    "tls.key" = var.sealed_secrets_key_cert.auto_generate_key_cert ? tls_private_key.sealed_secret_key.0.private_key_pem : var.sealed_secrets_key_cert.private_key
-    "tls.crt" = var.sealed_secrets_key_cert.auto_generate_key_cert ? tls_self_signed_cert.sealed_secret_cert.0.cert_pem : var.sealed_secrets_key_cert.private_cert
+    "tls.key" = var.sealed_secrets_auto_generate_key_cert ? tls_private_key.sealed_secret_key.0.private_key_pem : var.sealed_secrets_key_cert.private_key
+    "tls.crt" = var.sealed_secrets_auto_generate_key_cert ? tls_self_signed_cert.sealed_secret_cert.0.cert_pem : var.sealed_secrets_key_cert.private_cert
   }
 
   type = "kubernetes.io/tls"

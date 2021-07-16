@@ -72,31 +72,39 @@ variable "argocd_chart_values_overrides" {
   default = {}
 }
 
-variable "argocd_git_ssh_key" {
-  description = "The keys config for argocd git repo"
-  type = object({
-    auto_generate_keys : bool,
-    private_key : string
-  })
+variable "argocd_git_ssh_auto_generate_keys" {
+  description = "A flag to auto generate keys for git SSH"
+  type        = bool
 
-  default = {
-    auto_generate_keys = true
-    private_key        = ""
-  }
+  default = true
+}
+
+variable "argocd_git_ssh_private_key" {
+  description = "The keys config for argocd git repo"
+  sensitive   = true
+  type        = string
+
+  default = ""
+}
+
+variable "sealed_secrets_auto_generate_key_cert" {
+  description = "A flag to auto generate key/cert for sealed secrets"
+  type        = bool
+
+  default = true
 }
 
 variable "sealed_secrets_key_cert" {
   description = "The key/cert config for sealed secrets. If `auto_generate_key_cert` is false and no custom key/cert is provided, no custom key/cert will be generated"
+  sensitive   = true
   type = object({
-    auto_generate_key_cert : bool,
     private_key : string
     private_cert : string
   })
 
   default = {
-    auto_generate_key_cert = true
-    private_key            = ""
-    private_cert           = ""
+    private_key  = ""
+    private_cert = ""
   }
 }
 

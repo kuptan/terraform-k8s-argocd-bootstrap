@@ -151,13 +151,13 @@ module "argocd-bootstrap" {
   source = "kube-champ/argocd-bootstrap/k8s"
   ...
 
-  argocd_git_ssh_key = {
-    auto_generate_keys = false
-    private_key = "YOUR_PRIVATE_KEY"
-  }
+  argocd_git_ssh_auto_generate_keys = false
+
+  argocd_git_ssh_private_key = "YOUR_PRIVATE_KEY"
+
+  sealed_secrets_auto_generate_key_cert = false
 
   sealed_secrets_key_cert = {
-    auto_generate_key_cert = false
     private_key            = "YOUR_PRIVATE_KEY"
     private_cert           = "YOUR_PRIVATE_CERT"
   }

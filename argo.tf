@@ -50,7 +50,7 @@ data "template_file" "git" {
 }
 
 resource "tls_private_key" "git" {
-  count = var.argocd_git_ssh_key.auto_generate_keys ? 1 : 0
+  count = var.argocd_git_ssh_auto_generate_keys ? 1 : 0
 
   algorithm = "RSA"
   rsa_bits  = "4096"
@@ -64,7 +64,7 @@ resource "kubernetes_secret" "git" {
   }
 
   data = {
-    "${local.gitSSHSecretKey}" = var.argocd_git_ssh_key.auto_generate_keys ? tls_private_key.git.0.private_key_pem : var.argocd_git_ssh_key.private_key
+    "${local.gitSSHSecretKey}" = var.argocd_git_ssh_auto_generate_keys ? tls_private_key.git.0.private_key_pem : var.argocd_git_ssh_private_key
   }
 
   type = "Opaque"
@@ -90,7 +90,7 @@ resource "helm_release" "argo" {
   }
   set {
     name  = "configs.secret.argocdServerAdminPassword"
-    value = bcrypt(random_password.argo_admin_password.0.result)
+    value = bcrypt(random_password.argo_admin_password.result)
     type  = "string"
   }
   set {
