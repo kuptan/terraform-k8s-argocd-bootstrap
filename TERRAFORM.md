@@ -37,12 +37,12 @@ No Modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| argocd\_git\_repo\_url | The ArgoCD git config | `string` | n/a | yes |
 | argocd\_additional\_applications | Additional applications to be added to ArgoCD | `list(any)` | `[]` | no |
 | argocd\_additional\_projects | Additional projeccts to be added to ArgoCD | `list(any)` | `[]` | no |
 | argocd\_chart\_value\_files | A list of values.yaml files to be added to the argo installation. | `list(string)` | `[]` | no |
 | argocd\_chart\_values\_overrides | A map of key/value to override the argocdc chart values. The key must be the path/name of the chart value, e.g: `path.to.chart.key` | `map(string)` | `{}` | no |
 | argocd\_chart\_version | The ArgoCD chart version | `string` | `"3.7.1"` | no |
+| argocd\_git\_repo\_url | The ArgoCD git config | `string` | `""` | no |
 | argocd\_git\_ssh\_auto\_generate\_keys | A flag to auto generate keys for git SSH | `bool` | `true` | no |
 | argocd\_git\_ssh\_private\_key | The keys config for argocd git repo | `string` | `""` | no |
 | argocd\_image\_tag | The image tag for the ArgoCD image | `string` | `"v2.0.4"` | no |

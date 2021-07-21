@@ -1,6 +1,8 @@
 variable "argocd_git_repo_url" {
   description = "The ArgoCD git config"
   type        = string
+
+  default = ""
 }
 
 variable "remote_clusters" {
