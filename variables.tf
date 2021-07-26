@@ -60,6 +60,17 @@ variable "argocd_additional_projects" {
   default = []
 }
 
+variable "argocd_private_helm_repositories" {
+  description = "Private helm repositories to be added. The secret needs to have 'username' and 'password'"
+  type = list(object({
+    name : string
+    url : string
+    secret_name : string
+  }))
+
+  default = []
+}
+
 variable "argocd_chart_value_files" {
   description = "A list of values.yaml files to be added to the argo installation."
   type        = list(string)

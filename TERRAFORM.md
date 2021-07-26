@@ -12,7 +12,6 @@
 | helm | n/a |
 | kubernetes | >= 1.13.3 |
 | random | n/a |
-| template | n/a |
 | tls | n/a |
 
 ## Modules
@@ -29,7 +28,6 @@ No Modules.
 | [kubernetes_namespace](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) |
 | [kubernetes_secret](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) |
 | [random_password](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) |
-| [template_file](https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/file) |
 | [tls_private_key](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) |
 | [tls_self_signed_cert](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/self_signed_cert) |
 
@@ -46,6 +44,7 @@ No Modules.
 | argocd\_git\_ssh\_auto\_generate\_keys | A flag to auto generate keys for git SSH | `bool` | `true` | no |
 | argocd\_git\_ssh\_private\_key | The keys config for argocd git repo | `string` | `""` | no |
 | argocd\_image\_tag | The image tag for the ArgoCD image | `string` | `"v2.0.4"` | no |
+| argocd\_private\_helm\_repositories | Private helm repositories to be added. The secret needs to have 'username' and 'password' | <pre>list(object({<br>    name : string<br>    url : string<br>    secret_name : string<br>  }))</pre> | `[]` | no |
 | namespace | The namespace name that will be created for argo and sealed secret | `string` | `"argo-system"` | no |
 | namespace\_labels | labels to be added to the namespace | `map(string)` | `{}` | no |
 | remote\_clusters | A list of remote clusters that will be managed by ArgoCD | <pre>list(object({<br>    name : string<br>    namespaces : list(string)<br>    host : string<br>    caData : string<br>    token : string<br>  }))</pre> | `[]` | no |

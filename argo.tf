@@ -31,6 +31,38 @@ locals {
     yamlencode(local.cluster_credentials),
     yamlencode(local.argocd_config)
   ], var.argocd_chart_value_files)
+
+  main_git_repo = var.argocd_git_repo_url != "" ? [{
+    type = "git"
+    url  = var.argocd_git_repo_url
+    sshPrivateKeySecret = {
+      name = kubernetes_secret.git.0.metadata.0.name
+      key  = local.gitSSHSecretKey
+    }
+  }] : []
+
+  additional_repositories = [
+    for r in var.argocd_private_helm_repositories : {
+      type = "helm"
+      name = r.name
+      url  = r.url
+      usernameSecret = {
+        name = r.secret_name
+        key  = "username"
+      }
+      passwordSecret = {
+        name = r.secret_name
+        key  = "password"
+      }
+    }
+  ]
+
+  repositories_config = <<cfg
+server:
+  config:
+    repositories: |
+      ${indent(6, yamlencode(concat(local.main_git_repo, local.additional_repositories)))}
+  cfg
 }
 
 data "aws_eks_cluster" "creds" {
@@ -43,17 +75,6 @@ data "aws_eks_cluster_auth" "creds" {
   for_each = { for c in var.remote_clusters : c.name => c }
 
   name = each.key
-}
-
-data "template_file" "git" {
-  count = var.argocd_git_repo_url != "" ? 1 : 0
-
-  template = file("${path.module}/templates/git-config.tmpl")
-  vars = {
-    GIT_URL     = var.argocd_git_repo_url
-    SECRET_NAME = kubernetes_secret.git.0.metadata.0.name
-    SECRET_KEY  = local.gitSSHSecretKey
-  }
 }
 
 resource "tls_private_key" "git" {
@@ -87,7 +108,7 @@ resource "helm_release" "argo" {
   chart      = "argo-cd"
   version    = var.argocd_chart_version
 
-  values = concat(var.argocd_git_repo_url != "" ? [data.template_file.git.0.rendered] : [], local.valueFiles)
+  values = concat([local.repositories_config], local.valueFiles)
 
   set {
     name  = "global.image.tag"
