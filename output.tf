@@ -1,3 +1,7 @@
+output "namespace" {
+  value = kubernetes_namespace.argo.metadata.0.name
+}
+
 output "argocd_git_public_key" {
   value = var.argocd_git_ssh_auto_generate_keys ? tls_private_key.git.0.public_key_openssh : "CUSTOM_KEY_USED"
 }
