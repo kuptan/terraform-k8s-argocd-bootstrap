@@ -20,8 +20,8 @@ locals {
 
   argocd_config = {
     server = {
-      additionalApplications = var.argocd_additional_applications
-      additionalProjects     = var.argocd_additional_projects
+      additionalApplications = var.additional_applications
+      additionalProjects     = var.additional_projects
     }
   }
 
@@ -30,11 +30,11 @@ locals {
   valueFiles = concat([
     yamlencode(local.cluster_credentials),
     yamlencode(local.argocd_config)
-  ], var.argocd_chart_value_files)
+  ], var.additional_chart_value_files)
 
-  main_git_repo = var.argocd_git_repo_url != "" ? [{
+  main_git_repo = var.git_repo_url != "" ? [{
     type = "git"
-    url  = var.argocd_git_repo_url
+    url  = var.git_repo_url
     sshPrivateKeySecret = {
       name = kubernetes_secret.git.0.metadata.0.name
       key  = local.gitSSHSecretKey
@@ -42,7 +42,7 @@ locals {
   }] : []
 
   additional_repositories = [
-    for r in var.argocd_private_helm_repositories : {
+    for r in var.private_helm_repositories : {
       type = "helm"
       name = r.name
       url  = r.url
@@ -65,67 +65,53 @@ server:
   cfg
 }
 
-data "aws_eks_cluster" "creds" {
-  for_each = { for c in var.remote_clusters : c.name => c }
-
-  name = each.key
-}
-
-data "aws_eks_cluster_auth" "creds" {
-  for_each = { for c in var.remote_clusters : c.name => c }
-
-  name = each.key
-}
-
 resource "tls_private_key" "git" {
-  count = var.argocd_git_ssh_auto_generate_keys ? 1 : 0
+  count = var.git_ssh_auto_generate_keys ? 1 : 0
 
   algorithm = "RSA"
   rsa_bits  = "4096"
 }
 
 resource "kubernetes_secret" "git" {
-  count = var.argocd_git_repo_url != "" ? 1 : 0
+  count = var.git_repo_url != "" ? 1 : 0
 
   metadata {
     name      = "argocd-git-ssh-credentials"
-    namespace = kubernetes_namespace.argo.metadata.0.name
+    namespace = var.create_namespace ? kubernetes_namespace.this.0.metadata.0.name : var.namespace
     labels    = {}
   }
 
   data = {
-    "${local.gitSSHSecretKey}" = var.argocd_git_ssh_auto_generate_keys ? tls_private_key.git.0.private_key_pem : var.argocd_git_ssh_private_key
+    "${local.gitSSHSecretKey}" = var.git_ssh_auto_generate_keys ? tls_private_key.git.0.private_key_pem : var.git_ssh_private_key
   }
 
   type = "Opaque"
 }
 
-resource "helm_release" "argo" {
+resource "helm_release" "this" {
   name      = "argo-cd"
-  namespace = kubernetes_namespace.argo.metadata.0.name
+  namespace = var.create_namespace ? kubernetes_namespace.this.0.metadata.0.name : var.namespace
 
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
-  version    = var.argocd_chart_version
+  version    = var.chart_version
 
   values = concat([local.repositories_config], local.valueFiles)
 
   set {
-    name  = "global.image.tag"
-    value = var.argocd_image_tag
-  }
-  set {
     name  = "configs.secret.argocdServerAdminPassword"
-    value = bcrypt(random_password.argo_admin_password.result)
+    value = bcrypt(random_password.this.result)
     type  = "string"
   }
+
   set {
     name  = "configs.secret.argocdServerAdminPasswordMtime"
     value = "2020-01-01T10:11:12Z" //date "2020-01-01T10:11:12Z" , https://github.com/argoproj/argo-helm/issues/347#issuecomment-698871506
     type  = "string"
   }
+
   dynamic "set" {
-    for_each = var.argocd_chart_values_overrides
+    for_each = var.chart_values_overrides
 
     content {
       name  = set.key

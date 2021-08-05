@@ -1,7 +1,7 @@
 # Terraform K8s ArgoCD Bootstrap
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![GitHub Release](https://img.shields.io/github/release/kube-champ/terraform-k8s-argocd-bootstrap.svg?style=flat)]() [![PR's Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
 
-A terraform module that will bootstrap a Kubernetes cluster with ArgoCD and Sealed Secrets.
+A terraform module that will bootstrap a Kubernetes cluster with ArgoCD.
 
 ## Usage
 
@@ -74,9 +74,9 @@ module "argocd-bootstrap" {
     }
   ]
 
-  argocd_git_repo_url = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
+  git_repo_url = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
 
-  argocd_additional_applications = [{
+  additional_applications = [{
     name      = "root"
     namespace = "argo-system"
     project   = "vendor-pipeline"
@@ -100,7 +100,7 @@ module "argocd-bootstrap" {
     }
   }]
 
-  argocd_additional_projects = [{
+  additional_projects = [{
     name        = "vendor-pipeline"
     description = "project to handle all vendor pipeline infrastructure"
     namespace   = "argo-system"
@@ -123,7 +123,7 @@ module "argocd-bootstrap" {
 
 Check the [examples folder](https://github.com/kube-champ/terraform-k8s-argocd-bootstrap/tree/master/examples) for more examples 
 
-**Note**: Once your cluster is successfully bootstrapped, you'll need to get the git SSH public key and add it as a deploy key in your git repo. The public key is exposed as an output from the module under the name `argocd_git_public_key`.
+**Note**: Once your cluster is successfully bootstrapped, you'll need to get the git SSH public key and add it as a deploy key in your git repo. The public key is exposed as an output from the module under the name `git_public_key`.
 
 ### Overrides Charts Values
 ```terraform
@@ -131,17 +131,11 @@ module "argocd-bootstrap" {
   source = "kube-champ/argocd-bootstrap/k8s"
   ...
 
-  argocd_chart_value_files = [file("path/to/values/file.yaml")]
-  sealed_secrets_chart_value_files = [file("path/to/values/file.yaml")]
+  additional_chart_value_files = [file("path/to/values/file.yaml")]
 
-  argocd_chart_values_overrides = {
+  chart_values_overrides = {
     "controller.name" = "custom-controller-name"
   }
-
-  sealed_secrets_chart_values_overrides = {
-    "rbac.create" = "true"
-    "securityContext.runAsUser" = "1601"
-  }  
 }
 ```
 
@@ -151,16 +145,8 @@ module "argocd-bootstrap" {
   source = "kube-champ/argocd-bootstrap/k8s"
   ...
 
-  argocd_git_ssh_auto_generate_keys = false
-
-  argocd_git_ssh_private_key = "YOUR_PRIVATE_KEY"
-
-  sealed_secrets_auto_generate_key_cert = false
-
-  sealed_secrets_key_cert = {
-    private_key            = "YOUR_PRIVATE_KEY"
-    private_cert           = "YOUR_PRIVATE_CERT"
-  }
+  git_ssh_auto_generate_keys = false
+  git_ssh_private_key = "YOUR_PRIVATE_KEY"
 }
 ```
 ## Module Info

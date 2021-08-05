@@ -16,6 +16,6 @@ module "argocd-bootstrap" {
 
   remote_clusters = []
 
-  argocd_additional_applications = []
-  argocd_additional_projects     = []
+  additional_applications = []
+  additional_projects     = []
 }

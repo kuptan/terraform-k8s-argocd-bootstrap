@@ -44,9 +44,9 @@ module "argocd-bootstrap" {
     }
   ]
 
-  argocd_git_repo_url = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
+  git_repo_url = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
 
-  argocd_additional_applications = [{
+  additional_applications = [{
     name      = "root"
     namespace = "argo-system"
     project   = "vendor-pipeline"
@@ -70,7 +70,7 @@ module "argocd-bootstrap" {
     }
   }]
 
-  argocd_additional_projects = [{
+  additional_projects = [{
     name        = "vendor-pipeline"
     description = "project to handle all vendor pipeline infrastructure"
     namespace   = "argo-system"

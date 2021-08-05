@@ -33,14 +33,14 @@ module "argocd-bootstrap" {
 
   remote_clusters = []
 
-  argocd_additional_applications = []
-  argocd_additional_projects     = []
+  additional_applications = []
+  additional_projects     = []
 
-  argocd_git_repo_url = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
+  git_repo_url = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
 
-  argocd_private_helm_repositories = [{
-    name = "test-private-repo"
-    url = "https://chart-repo.domain.com/helm-charts"
+  private_helm_repositories = [{
+    name        = "test-private-repo"
+    url         = "https://chart-repo.domain.com/helm-charts"
     secret_name = kubernetes_secret.helm_credentials.metadata.0.name
   }]
 }
