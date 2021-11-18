@@ -34,19 +34,6 @@ data "aws_eks_cluster_auth" "target" {
   name = var.target_cluster_name
 }
 
-######### 
-### AWS EKS remote cluster credentials
-#########
-data "aws_eks_cluster" "remote" {
-  for_each = { for c in var.remote_clusters : c.name => c }
-  name     = each.key
-}
-
-data "aws_eks_cluster_auth" "remote" {
-  for_each = { for c in var.remote_clusters : c.name => c }
-  name     = each.key
-}
-
 provider "helm" {
   kubernetes {
     host                   = data.aws_eks_cluster.target.endpoint
@@ -63,74 +50,10 @@ provider "kubernetes" {
 
 module "argocd-bootstrap" {
   source = "kube-champ/argocd-bootstrap/k8s"
-
-  remote_clusters = [
-    for c in var.remote_clusters : {
-      name       = c.name
-      namespaces = c.namespaces
-      host : data.aws_eks_cluster.remote[c.name].endpoint
-      caData : data.aws_eks_cluster.remote[c.name].certificate_authority.0.data
-      token : data.aws_eks_cluster_auth.remote[c.name].token
-    }
-  ]
-
-  git_repo_url = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
-
-  additional_applications = [{
-    name      = "root"
-    namespace = "argo-system"
-    project   = "vendor-pipeline"
-    source = {
-      repoURL        = "git@github.com:reynencourt/vendor-pipeline-argocd.git"
-      targetRevision = "master"
-      path           = "root"
-      directory = {
-        recurse = false
-      }
-    }
-    destination = {
-      server    = "https://kubernetes.default.svc"
-      namespace = "default"
-    }
-    syncPolicy = {
-      automated = {
-        prune    = false
-        selfHeal = false
-      }
-    }
-  }]
-
-  additional_projects = [{
-    name        = "vendor-pipeline"
-    description = "project to handle all vendor pipeline infrastructure"
-    namespace   = "argo-system"
-    sourceRepos = ["*"]
-    destinations = [{
-      namespace = "*"
-      server    = "*"
-    }]
-    clusterResourceWhitelist = [{
-      group = "*"
-      kind  = "*"
-    }]
-    namespaceResourceWhitelist = [{
-      group = "*"
-      kind  = "*"
-    }]
-  }]
-}
-```
-
-Check the [examples folder](https://github.com/kube-champ/terraform-k8s-argocd-bootstrap/tree/master/examples) for more examples 
-
-**Note**: Once your cluster is successfully bootstrapped, you'll need to get the git SSH public key and add it as a deploy key in your git repo. The public key is exposed as an output from the module under the name `git_public_key`.
-
-### Overrides Charts Values
-```terraform
-module "argocd-bootstrap" {
-  source = "kube-champ/argocd-bootstrap/k8s"
   ...
 
+  chart_version = "3.7.1"
+  
   additional_chart_value_files = [file("path/to/values/file.yaml")]
 
   chart_values_overrides = {
@@ -139,16 +62,8 @@ module "argocd-bootstrap" {
 }
 ```
 
-### BYOK (Bring Your Own Keys)
-```terraform
-module "argocd-bootstrap" {
-  source = "kube-champ/argocd-bootstrap/k8s"
-  ...
+Check the [examples folder](https://github.com/kube-champ/terraform-k8s-argocd-bootstrap/tree/master/examples) for more examples 
 
-  git_ssh_auto_generate_keys = false
-  git_ssh_private_key = "YOUR_PRIVATE_KEY"
-}
-```
 ## Module Info
 See the module info here [here](./TERRAFORM.md) or view it on the [Terraform Registry](https://registry.terraform.io/modules/kube-champ/argocd-bootstrap/k8s/latest)
 
